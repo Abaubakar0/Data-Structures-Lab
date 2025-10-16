@@ -1,0 +1,128 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+using namespace std;
+
+class Node {
+public:
+    string ip;    
+    Node* next;   
+    Node* prev;   
+
+
+    Node(string i) {
+        ip = i;
+        next = nullptr;
+        prev = nullptr;
+    }
+};
+
+class DoublyLinkedList {
+public:
+    Node* head;   
+    Node* tail;   
+
+
+    DoublyLinkedList() {
+        head = nullptr;
+        tail = nullptr;
+    }
+
+
+    void insert(string ip) {
+        Node* newNode = new Node(ip);
+
+
+        if (head == nullptr) {
+            head = tail = newNode;
+        } 
+        else {
+
+            tail->next = newNode;
+            newNode->prev = tail;
+            tail = newNode;
+        }
+    }
+    void displayForward() {
+        cout << "\------nForward traversal:----\n";
+        Node* temp = head;
+
+        if (temp == nullptr) {
+            cout << "List is empty.\n";
+            return;
+        }
+
+        while (temp != nullptr) {
+            cout << temp->ip;
+            if (temp->next != nullptr)
+                cout << " -> ";
+            temp = temp->next;
+        }
+        cout << endl;
+    }
+
+    void displayBackward() {
+        cout << "----------\nBackward traversal:---------\n";
+        Node* temp = tail;
+
+        if (temp == nullptr) {
+            cout << "List is empty.\n";
+            return;
+        }
+
+        while (temp != nullptr) {
+            cout << temp->ip;
+            if (temp->prev != nullptr)
+                cout << " -> ";
+            temp = temp->prev;
+        }
+        cout << endl;
+    }
+
+
+    void freeList() {
+        Node* temp = head;
+        while (temp != nullptr) {
+            Node* nextNode = temp->next;
+            delete temp;
+            temp = nextNode;
+        }
+        head = tail = nullptr;
+    }
+};
+
+int main() {
+
+    ifstream file("ips.txt");
+    if (!file) {
+        cout << "Error: Unable to open ips.txt file!" << endl;
+        return 1;
+    }
+
+
+    string line;
+    getline(file, line);
+    file.close();
+
+
+    stringstream ss(line);
+    string ip;
+
+
+    DoublyLinkedList ipList;
+
+
+    while (getline(ss, ip, ',')) {
+        ipList.insert(ip);
+    }
+
+
+    ipList.displayForward();
+    ipList.displayBackward();
+
+
+    ipList.freeList();
+    cout<<"---------Thanks--------";
+
+    return 0;
+}
