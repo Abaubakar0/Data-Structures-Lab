@@ -1,0 +1,374 @@
+#include <iostream>
+using namespace std;
+
+
+struct Node {
+    int rating;
+    string name;
+    long long hp;
+    Node* left;
+    Node* right;
+
+    Node(int r, string n, long long h) {
+        rating = r;
+        name = n;
+        hp = h;
+        left = right = NULL;
+    }
+};
+
+Node* root = NULL;
+
+
+Node* findPlayer(Node* cur, int rating) {
+    if (cur == NULL) return NULL;
+
+    if (cur->rating == rating)
+        return cur;
+    else if (rating < cur->rating)
+        return findPlayer(cur->left, rating);
+    else
+        return findPlayer(cur->right, rating);
+}
+
+bool joinPlayer(int rating, string name, long long hp) {
+    if (root == NULL) {
+        root = new Node(rating, name, hp);
+        return true;
+    }
+
+    Node* cur = root;
+    Node* parent = NULL;
+
+    while (cur != NULL) {
+        parent = cur;
+
+        if (rating == cur->rating)
+            return false;   // duplicate
+        else if (rating < cur->rating)
+            cur = cur->left;
+        else
+            cur = cur->right;
+    }
+
+    if (rating < parent->rating)
+        parent->left = new Node(rating, name, hp);
+    else
+        parent->right = new Node(rating, name, hp);
+
+    return true;
+}
+
+Node* getMin(Node* cur) {
+    while (cur && cur->left)
+        cur = cur->left;
+    return cur;
+}
+
+Node* removePlayer(Node* cur, int rating, bool &deleted) {
+    if (cur == NULL) return NULL;
+
+    if (rating < cur->rating)
+        cur->left = removePlayer(cur->left, rating, deleted);
+    else if (rating > cur->rating)
+        cur->right = removePlayer(cur->right, rating, deleted);
+    else {
+        deleted = true;
+
+        // Case 1: no child
+        if (!cur->left && !cur->right) {
+            delete cur;
+            return NULL;
+        }
+        // Case 2: one child
+        else if (!cur->left) {
+            Node* temp = cur->right;
+            delete cur;
+            return temp;
+        }
+        else if (!cur->right) {
+            Node* temp = cur->left;
+            delete cur;
+            return temp;
+        }
+        // Case 3: two children
+        else {
+            Node* successor = getMin(cur->right);
+            cur->rating = successor->rating;
+            cur->name = successor->name;
+            cur->hp = successor->hp;
+            cur->right = removePlayer(cur->right, successor->rating, deleted);
+        }
+    }
+    return cur;
+}
+
+Node* getNext(int x) {
+    Node* cur = root;
+    Node* ans = NULL;
+
+    while (cur) {
+        if (cur->rating > x) {
+            ans = cur;
+            cur = cur->left;
+        } else {
+            cur = cur->right;
+        }
+    }
+    return ans;
+}
+
+Node* getPrev(int x) {
+    Node* cur = root;
+    Node* ans = NULL;
+
+    while (cur) {
+        if (cur->rating < x) {
+            ans = cur;
+            cur = cur->right;
+        } else {
+            cur = cur->left;
+        }
+    }
+    return ans;
+}
+
+
+void printRange(Node* cur, int L, int R, bool &found) {
+    if (!cur) return;
+
+    if (cur->rating > L)
+        printRange(cur->left, L, R, found);
+
+    if (cur->rating >= L && cur->rating <= R) {
+        cout << cur->rating << " " << cur->name << " " << cur->hp << "\n";
+        found = true;
+    }
+
+    if (cur->rating < R)
+        printRange(cur->right, L, R, found);
+}
+
+
+int getRank(Node* cur, int x) {
+    if (!cur) return 0;
+
+    if (cur->rating < x)
+        return 1 + getRank(cur->left, x) + getRank(cur->right, x);
+    else
+        return getRank(cur->left, x);
+}
+
+void printKth(Node* cur, int &k) {
+    if (!cur || k <= 0) return;
+
+    printKth(cur->left, k);
+
+    k--;
+    if (k == 0) {
+        cout << cur->rating << " " << cur->name << " " << cur->hp << "\n";
+        return;
+    }
+
+    printKth(cur->right, k);
+}
+
+int countPlayers(Node* cur) {
+    if (!cur) return 0;
+    return 1 + countPlayers(cur->left) + countPlayers(cur->right);
+}
+
+int treeHeight(Node* cur) {
+    if (!cur) return -1;
+    return 1 + max(treeHeight(cur->left), treeHeight(cur->right));
+}
+
+int countLeaves(Node* cur) {
+    if (!cur) return 0;
+    if (!cur->left && !cur->right) return 1;
+    return countLeaves(cur->left) + countLeaves(cur->right);
+}
+
+Node* getLCA(Node* cur, int a, int b) {
+    if (!cur) return NULL;
+
+    if (a < cur->rating && b < cur->rating)
+        return getLCA(cur->left, a, b);
+    if (a > cur->rating && b > cur->rating)
+        return getLCA(cur->right, a, b);
+
+    return cur;
+}
+
+int getDistance(Node* cur, int x, int d) {
+    if (!cur) return -1;
+    if (cur->rating == x) return d;
+
+    if (x < cur->rating)
+        return getDistance(cur->left, x, d + 1);
+    else
+        return getDistance(cur->right, x, d + 1);
+}
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int Q;
+    cin >> Q;
+
+    while (Q--) {
+        string cmd;
+        cin >> cmd;
+
+        if (cmd == "JOIN") {
+            int r; string n; long long h;
+            cin >> r >> n >> h;
+
+            if (joinPlayer(r, n, h))
+                cout << "JOINED\n";
+            else
+                cout << "DUPLICATE\n";
+        }
+
+        else if (cmd == "LEAVE") {
+            int r;
+            cin >> r;
+            bool deleted = false;
+            root = removePlayer(root, r, deleted);
+
+            if (deleted) cout << "LEFT\n";
+            else cout << "NOT FOUND\n";
+        }
+
+        else if (cmd == "STATUS") {
+            int r; cin >> r;
+            Node* p = findPlayer(root, r);
+
+            if (!p) cout << "NOT FOUND\n";
+            else cout << p->rating << " " << p->name << " " << p->hp << "\n";
+        }
+
+        else if (cmd == "DAMAGE") {
+            int r; long long a;
+            cin >> r >> a;
+            Node* p = findPlayer(root, r);
+
+            if (!p) cout << "NOT FOUND\n";
+            else {
+                p->hp = max(0LL, p->hp - a);
+                cout << "DAMAGED " << p->hp << "\n";
+            }
+        }
+
+        else if (cmd == "HEAL") {
+            int r; long long a;
+            cin >> r >> a;
+            Node* p = findPlayer(root, r);
+
+            if (!p) cout << "NOT FOUND\n";
+            else {
+                p->hp += a;
+                cout << "HEALED " << p->hp << "\n";
+            }
+        }
+
+        else if (cmd == "MATCH") {
+            int x; cin >> x;
+
+            if (!root) {
+                cout << "EMPTY\n";
+                continue;
+            }
+
+            Node* p = getPrev(x);
+            Node* s = getNext(x);
+
+            if (!p && !s) cout << "EMPTY\n";
+            else if (!p) cout << s->rating << " " << s->name << " " << s->hp << "\n";
+            else if (!s) cout << p->rating << " " << p->name << " " << p->hp << "\n";
+            else {
+                int d1 = abs(x - p->rating);
+                int d2 = abs(s->rating - x);
+                if (d1 <= d2)
+                    cout << p->rating << " " << p->name << " " << p->hp << "\n";
+                else
+                    cout << s->rating << " " << s->name << " " << s->hp << "\n";
+            }
+        }
+
+        else if (cmd == "NEXT") {
+            int x; cin >> x;
+            Node* p = getNext(x);
+
+            if (!p) cout << "NONE\n";
+            else cout << p->rating << " " << p->name << " " << p->hp << "\n";
+        }
+
+        else if (cmd == "PREV") {
+            int x; cin >> x;
+            Node* p = getPrev(x);
+
+            if (!p) cout << "NONE\n";
+            else cout << p->rating << " " << p->name << " " << p->hp << "\n";
+        }
+
+        else if (cmd == "RANGE") {
+            int L, R;
+            cin >> L >> R;
+            bool found = false;
+
+            printRange(root, L, R, found);
+            if (!found) cout << "EMPTY\n";
+        }
+
+        else if (cmd == "RANK") {
+            int x; cin >> x;
+            cout << getRank(root, x) << "\n";
+        }
+
+        else if (cmd == "KTH") {
+            int k; cin >> k;
+            int total = countPlayers(root);
+
+            if (k < 1 || k > total)
+                cout << "OUT OF RANGE\n";
+            else
+                printKth(root, k);
+        }
+
+        else if (cmd == "DUEL") {
+            int a, b;
+            cin >> a >> b;
+
+            if (!findPlayer(root, a) || !findPlayer(root, b)) {
+                cout << "NOT FOUND\n";
+            } else {
+                Node* lca = getLCA(root, a, b);
+                int d = getDistance(lca, a, 0) + getDistance(lca, b, 0);
+                cout << "DIST " << d << "\n";
+            }
+        }
+
+        else if (cmd == "STATS") {
+            int n = countPlayers(root);
+            cout << "PLAYERS " << n << "\n";
+
+            if (!root) {
+                cout << "MIN NONE\n";
+                cout << "MAX NONE\n";
+                cout << "HEIGHT -1\n";
+                cout << "LEAVES 0\n";
+            } else {
+                cout << "MIN " << getMin(root)->rating << "\n";
+
+                Node* cur = root;
+                while (cur->right) cur = cur->right;
+                cout << "MAX " << cur->rating << "\n";
+
+                cout << "HEIGHT " << treeHeight(root) << "\n";
+                cout << "LEAVES " << countLeaves(root) << "\n";
+            }
+        }
+    }
+    return 0;
+}
