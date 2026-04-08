@@ -1,0 +1,61 @@
+#include <iostream>
+using namespace std;
+
+class Gun {
+private:
+    int totalBullets;     
+    int magazineBullets;  
+    int magCapacity;      
+    int timeSeconds;      
+
+public:
+    Gun(int pool, int cap) {
+        totalBullets = pool - cap; 
+        magCapacity = cap;
+        magazineBullets = cap;
+        timeSeconds = 0;
+    }
+
+    void shot() {
+        if (magazineBullets == 0 && totalBullets == 0) {
+            cout << " Out of ammo. Can't shoot.\n";
+            return;
+        }
+
+        // SHOT
+        magazineBullets--;
+        timeSeconds++;
+        cout << "Shot fired. Mag: " << magazineBullets 
+             << ", Pool: " << totalBullets 
+             << ", Time: " << timeSeconds << "s\n";
+
+        // AUTO-RELOAD ONE BULLET
+        if (magazineBullets < magCapacity && totalBullets > 0) {
+            magazineBullets++;
+            totalBullets--;
+            timeSeconds++;
+            cout << "Auto reload 1 bullet -> Mag: " << magazineBullets
+                 << ", Pool: " << totalBullets
+                 << ", Time: " << timeSeconds << "s\n";
+        }
+    }
+
+    bool emptyGun() const {
+        return magazineBullets == 0 && totalBullets == 0;
+    }
+
+    int totalTime() const {
+        return timeSeconds;
+    }
+};
+
+int main() {
+    Gun g(100, 20);
+
+    while (!g.emptyGun()) {
+        g.shot();
+    }
+
+    cout << "\n💀 OUT OF AMMO 💀\n";
+    cout << "Total time taken: " << g.totalTime() << " seconds.\n";
+}
